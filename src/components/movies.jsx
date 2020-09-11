@@ -1,9 +1,11 @@
 import React, { Component } from "react";
+import { Link } from 'react-router-dom';
 import { getMovies } from "../services/fakeMovieService";
 import { getGenres } from "../services/fakeGenreService";
 import ListGroup from "./common/listGroup";
 import MoviesTable from "./moviesTable";
 import Pagination from "./common/pagination";
+import SearchBox from './searchBox';
 import { paginate } from "../utils/paginate";
 import _ from 'lodash';
 
@@ -13,6 +15,8 @@ class Movies extends Component {
     currentPage: 1,
     genres: [],
     pageSize: 4,
+    searchQuery: '',
+    selectedGenre: null,
     columnSort: { path: 'title', order: "asc" },
   };
 
@@ -39,8 +43,12 @@ class Movies extends Component {
   };
 
   handleGenreSelect = (genre) => {
-    this.setState({ selectedGenre: genre, currentPage: 1 });
+    this.setState({ selectedGenre: genre, searchQuery: '', currentPage: 1 });
   };
+
+  handleSearch = (query) => {
+    this.setState({ searchQuery: query, selectedGenre: null, currentPage: 1 });
+  }
 
   handleSort = (columnSort) => {
 
@@ -53,14 +61,22 @@ class Movies extends Component {
       currentPage,
       columnSort,
       selectedGenre,
+      searchQuery,
       movies: allMovies,
     } = this.state;
 
     // Filtering Items
-    const filtered =
-      selectedGenre && selectedGenre._id
-        ? allMovies.filter((m) => m.genre._id === selectedGenre._id)
-        : allMovies;
+    let filtered = allMovies;
+    if (searchQuery) {
+      filtered = allMovies.filter((m) =>
+        m.title.toLowerCase().startsWith(searchQuery.toLowerCase())
+      );
+    } else if (selectedGenre && selectedGenre._id) {
+      filtered = allMovies.filter((m) => m.genre._id === selectedGenre._id);
+    }
+      // selectedGenre && selectedGenre._id
+      //   ? allMovies.filter((m) => m.genre._id === selectedGenre._id)
+      //   : allMovies;
 
     // Sorting Items
     const sorted = _.orderBy(filtered, [columnSort.path], [columnSort.order]);
@@ -104,6 +120,13 @@ class Movies extends Component {
           />
         </div>
         <div className='col'>
+          <Link 
+              to='/movies/new'
+              className='btn btn-primary'
+              style={{ marginBottom: 20 }}
+          >
+            New Movie
+          </Link>
           <p
             style={{
               fontFamily: "courgette",
@@ -114,6 +137,7 @@ class Movies extends Component {
           >
             <strong>Showing {totalCount} movies in the database.</strong>{" "}
           </p>
+          <SearchBox value={this.state.searchQuery} onChange={this.handleSearch} />
           <MoviesTable
             movies={movies}
             columnSort={columnSort}
